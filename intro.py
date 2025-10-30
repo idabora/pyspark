@@ -14,3 +14,4 @@ data = [(1, 'anurodh'), (2, "arpit")]
 column = ['id', 'name']
 df = spark.createDataFrame(data, column)
 df.show()
+df.explain(extended=True)

@@ -179,23 +179,32 @@
     needed to run jobs across a distributed cluster.
 
 #### DAG
-    - df = spark.read.csv("data.csv")
-    df2 = df.filter(df.age > 25).select("name", "age")
+    When you write transformations like this:
+        df = spark.read.csv("data.csv")
+        df2 = df.filter(df.age > 30)
+        df3 = df2.select("name", "age")
+        df3.show()
+    Spark doesn’t execute each line immediately.
 
-    filter and select are transformations.
+    Instead, it:
 
-    Spark does not execute them immediately — it just records them in a plan.
+    - Records each transformation (read → filter → select) into a logical plan.
+    - Builds a DAG of transformations showing how data should flow.
+    - When an action (like .show(), .count(), .collect()) is called — Spark:
+        * Submits the DAG to the scheduler.
+        * Divides it into stages (based on shuffle boundaries).
+        * Converts each stage into tasks that run on executors.
 
-    This plan is called a logical plan, basically a blueprint of what you want done.
+    - Graph: Each node represents a computation (like a map, filter, join, etc.), and edges represent dependencies between those computations.
 
-    “Take this CSV → Filter rows where age > 25 → Select columns name and age.”
 
-    - When an action is triggered, like df2.show():
-        Spark examines the logical plan and figures out how to execute it in a distributed environment.
 
-            It converts the plan into a DAG (Directed Acyclic Graph):
-            Nodes of DAG = RDDs/DataFrames or intermediate stages
-            Edges of DAG = dependencies between operations
+    | Level     | Meaning                                   | Example                          |
+    | --------- | ----------------------------------------- | -------------------------------- |
+    | **DAG**   | Complete logical flow of transformations  | `read → filter → join → write`   |
+    | **Stage** | Group of tasks without shuffle dependency | `map`, `filter`                  |
+    | **Task**  | Unit of work executed on one partition    | Apply `filter()` on partition #3 |
+
 
     | Term             | Meaning                                                               |
     | ---------------- | --------------------------------------------------------------------- |

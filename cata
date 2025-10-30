@@ -1,0 +1,22 @@
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("broadCasting").getOrCreate()
+sc = spark.sparkContext
+
+my_dict = {1: 'One', 2: "Two", 3: "Three", 4: "Four"}
+
+broadcasted_values = sc.broadcast(my_dict)
+
+rdd = sc.parallelize([('aman', 1), ('anurodh', 2), ('arpit', 3), ('aditya', 4), ('sahil', 5)], 2)
+
+
+def decode_id(record):
+    name, id = record
+    val = broadcasted_values.value.get(id, 'Unknown')
+    return (name, val)
+
+
+decoded_data = rdd.map(decode_id)
+print(decoded_data.collect())
+print(rdd.getNumPartitions())
+print(sc.defaultParallelism)
